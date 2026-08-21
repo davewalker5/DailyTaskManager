@@ -16,6 +16,7 @@ declare -a exclusions=(
     "database.ipynb"
     "export.ipynb"
     "pathutils.ipynb"
+    "reporting-utils.ipynb"
 )
 
 # Get a list of Jupyter Notebooks and iterate over them
