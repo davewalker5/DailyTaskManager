@@ -18,7 +18,7 @@ The application is intended for a single user and can be run locally or in Docke
 
 ### Today
 
-The Today page displays tasks whose start date is today. Tasks are ordered by start date and description and can be:
+The Today page displays tasks whose start date is today, plus all open tasks irrespective of their start date. Tasks are ordered by start date and description and can be:
 
 - Closed using a selected completion date
 - Reopened by clearing their completion date

@@ -59,7 +59,7 @@ def test_template_copies_historical_values(
 
     task = manager.list_tasks()[0]
     assert task["description"] == "Clean bathroom"
-    assert task["predefined_task_id"] == predefined_id
+    assert "predefined_task_id" not in task.keys()
 
 
 def test_template_copies_predefined_location(
@@ -161,6 +161,38 @@ def test_tasks_are_sorted_by_start_date_then_description(
     ]
 
 
+def test_date_range_can_include_open_tasks_from_any_date(
+    classified_manager: tuple[TaskManager, int],
+) -> None:
+    """Today-style filtering includes all open tasks but only today's completed tasks."""
+    manager, type_id = classified_manager
+    today = date(2026, 8, 20)
+    manager.add_ad_hoc_task("Open yesterday", type_id, date(2026, 8, 19))
+    manager.add_ad_hoc_task("Open today", type_id, today)
+    manager.add_ad_hoc_task("Open tomorrow", type_id, date(2026, 8, 21))
+    completed_today = manager.add_ad_hoc_task("Completed today", type_id, today)
+    completed_yesterday = manager.add_ad_hoc_task(
+        "Completed yesterday", type_id, date(2026, 8, 19)
+    )
+    manager.set_task_completion(completed_today, today)
+    manager.set_task_completion(completed_yesterday, date(2026, 8, 19))
+
+    rows = manager.list_tasks(
+        TaskFilter(
+            start_from=today,
+            start_to=today,
+            include_open_outside_date_range=True,
+        )
+    )
+
+    assert {row["description"] for row in rows} == {
+        "Open yesterday",
+        "Open today",
+        "Open tomorrow",
+        "Completed today",
+    }
+
+
 def test_reference_data_deletion_rejects_items_in_use(manager: TaskManager) -> None:
     """Reference data can only be deleted while unreferenced."""
     category_id = manager.save_category("Practical")
@@ -224,10 +256,10 @@ def test_duplicate_template_copies_memberships_and_numbers_names(
     ] == [second_id, first_id]
 
 
-def test_predefined_task_deletion_rejects_items_in_use(
+def test_predefined_task_deletion_only_rejects_template_members(
     classified_manager: tuple[TaskManager, int],
 ) -> None:
-    """Reusable tasks can only be deleted while unreferenced."""
+    """Historical snapshots do not prevent deletion of their source definition."""
     manager, type_id = classified_manager
     template_task_id = manager.save_predefined_task("Templated", type_id)
     historical_task_id = manager.save_predefined_task("Historical", type_id)
@@ -237,11 +269,8 @@ def test_predefined_task_deletion_rejects_items_in_use(
 
     with pytest.raises(ValueError, match="Pre-defined task is in use"):
         manager.delete_predefined_task(template_task_id)
-    with pytest.raises(ValueError, match="Pre-defined task is in use"):
-        manager.delete_predefined_task(historical_task_id)
 
+    manager.delete_predefined_task(historical_task_id)
     manager.delete_predefined_task(unused_task_id)
-    assert {row["description"] for row in manager.list_predefined_tasks()} == {
-        "Historical",
-        "Templated",
-    }
+    assert [row["description"] for row in manager.list_predefined_tasks()] == ["Templated"]
+    assert [row["description"] for row in manager.list_tasks()] == ["Historical"]

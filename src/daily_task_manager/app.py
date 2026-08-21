@@ -336,7 +336,13 @@ def show_today(manager: TaskManager) -> None:
             f"Added {library_added_count} task{'s' if library_added_count != 1 else ''}."
         )
     today = date.today()
-    rows = manager.list_tasks(TaskFilter(start_from=today, start_to=today))
+    rows = manager.list_tasks(
+        TaskFilter(
+            start_from=today,
+            start_to=today,
+            include_open_outside_date_range=True,
+        )
+    )
     _task_action_table(manager, rows, "today")
     with st.expander("Add an ad-hoc task", expanded=not rows):
         _add_task_form(manager, today, "today")
