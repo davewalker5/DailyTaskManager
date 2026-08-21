@@ -1,0 +1,10 @@
+services:
+  dailytaskmanager:
+    container_name: dailytaskmanager
+    image: davewalker5/dailytaskmanager:latest
+    platform: linux/amd64
+    restart: always
+    ports:
+      - "8106:8501"
+    volumes:
+      - /path/to/task/manager/database/folder:/var/opt/dailytaskmanager/

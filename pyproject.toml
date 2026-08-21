@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "daily-task-manager"
+version = "1.1.0"
+description = "Daily Task Manager"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+  "streamlit>=1.59,<2",
+  "yoyo-migrations"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "ruff"
+]
+
+[tool.setuptools]
+py-modules = ["streamlit_app"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["db*", "daily_task_manager*", "ui*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
