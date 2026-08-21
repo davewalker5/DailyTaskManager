@@ -24,7 +24,8 @@ class Location:
 class TaskFilter:
     """Filters accepted by the task browser.
 
-    All fields are optional and are combined with AND semantics.
+    All fields are optional and are combined with AND semantics. The open-task
+    override broadens only the configured start-date range.
     """
 
     start_from: date | None = None
@@ -33,6 +34,7 @@ class TaskFilter:
     status: TaskStatus | None = None
     type_id: int | None = None
     category_id: int | None = None
+    include_open_outside_date_range: bool = False
 
 
 @dataclass(frozen=True)

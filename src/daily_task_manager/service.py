@@ -320,18 +320,16 @@ class TaskManager:
             return predefined_task_id
 
     def delete_predefined_task(self, predefined_task_id: int) -> None:
-        """Delete a reusable task that is not referenced elsewhere.
+        """Delete a reusable task that is not used by a template.
 
         :param predefined_task_id: Reusable task to delete.
         :raises ValueError: If the task is in use or does not exist.
         """
         with connect(self.database_path) as connection:
             in_use = connection.execute(
-                """SELECT 1 FROM daily_template_tasks WHERE predefined_task_id = ?
-                   UNION ALL
-                   SELECT 1 FROM tasks WHERE predefined_task_id = ?
-                   LIMIT 1""",
-                (predefined_task_id, predefined_task_id),
+                """SELECT 1 FROM daily_template_tasks
+                   WHERE predefined_task_id = ? LIMIT 1""",
+                (predefined_task_id,),
             ).fetchone()
             if in_use is not None:
                 raise ValueError("Pre-defined task is in use and cannot be deleted")
@@ -588,14 +586,13 @@ class TaskManager:
             ordered_rows = [rows_by_id[task_id] for task_id in predefined_task_ids]
             connection.executemany(
                 """INSERT INTO tasks
-                   (description, start_date, type_id, predefined_task_id, location_id)
-                   VALUES (?, ?, ?, ?, ?)""",
+                   (description, start_date, type_id, location_id)
+                   VALUES (?, ?, ?, ?)""",
                 (
                     (
                         row["description"],
                         start_date.isoformat(),
                         row["type_id"],
-                        row["predefined_task_id"],
                         row["location_id"],
                     )
                     for row in ordered_rows
@@ -635,18 +632,27 @@ class TaskManager:
     def list_tasks(self, filters: TaskFilter | None = None) -> list[sqlite3.Row]:
         """List historical tasks with optional browser filters.
 
-        :param filters: Filter values combined with AND semantics.
+        :param filters: Optional task-browser and date-range filter values.
         :return: Task rows with derived category and status.
         """
         filters = filters or TaskFilter()
         clauses: list[str] = []
         parameters: list[str | int] = []
+        date_clauses: list[str] = []
+        date_parameters: list[str] = []
         if filters.start_from:
-            clauses.append("t.start_date >= ?")
-            parameters.append(filters.start_from.isoformat())
+            date_clauses.append("t.start_date >= ?")
+            date_parameters.append(filters.start_from.isoformat())
         if filters.start_to:
-            clauses.append("t.start_date <= ?")
-            parameters.append(filters.start_to.isoformat())
+            date_clauses.append("t.start_date <= ?")
+            date_parameters.append(filters.start_to.isoformat())
+        if date_clauses:
+            date_expression = " AND ".join(date_clauses)
+            if filters.include_open_outside_date_range:
+                clauses.append(f"(({date_expression}) OR t.end_date IS NULL)")
+            else:
+                clauses.append(date_expression)
+            parameters.extend(date_parameters)
         if filters.description.strip():
             clauses.append("instr(lower(t.description), lower(?)) > 0")
             parameters.append(filters.description.strip())

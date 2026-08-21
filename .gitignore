@@ -143,4 +143,5 @@ cython_debug/
 proto/
 data/taskmanager.db
 data/imports/
+data/reports/
 .ruff_cache/
