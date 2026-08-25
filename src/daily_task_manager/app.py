@@ -335,11 +335,13 @@ def show_today(manager: TaskManager) -> None:
         st.success(
             f"Added {library_added_count} task{'s' if library_added_count != 1 else ''}."
         )
+    show_completed = st.checkbox("Show completed tasks", value=False)
     today = date.today()
     rows = manager.list_tasks(
         TaskFilter(
             start_from=today,
             start_to=today,
+            status=None if show_completed else TaskStatus.OPEN,
             include_open_outside_date_range=True,
         )
     )
