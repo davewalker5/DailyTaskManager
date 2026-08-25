@@ -20,12 +20,14 @@ def test_main_navigation_is_below_versioned_title(tmp_path: Path, monkeypatch: o
     category_id = manager.save_category("Practical")
     type_id = manager.save_type("Cleaning", category_id)
     manager.add_ad_hoc_task("Clean", type_id, date.today())
+    completed_task_id = manager.add_ad_hoc_task("Already clean", type_id, date.today())
+    manager.set_task_completion(completed_task_id, date.today())
     app_path = Path(__file__).resolve().parents[1] / "src" / "streamlit_app.py"
 
     app = AppTest.from_file(str(app_path)).run(timeout=10)
 
     assert not app.exception
-    assert app.title[0].value == "📋 Daily Task Manager v1.0.0"
+    assert app.title[0].value == "📋 Daily Task Manager v1.3.0"
     assert app.radio[0].options == list(
         (
             "Today",
@@ -39,6 +41,13 @@ def test_main_navigation_is_below_versioned_title(tmp_path: Path, monkeypatch: o
     )
     assert not app.sidebar.title
     assert app.header[0].value == "Today"
+    assert app.checkbox[0].label == "Show completed tasks"
+    assert not app.checkbox[0].value
+    assert app.dataframe[0].value["Description"].tolist() == ["Clean"]
+
+    app.checkbox[0].check().run(timeout=10)
+
+    assert app.dataframe[0].value["Description"].tolist() == ["Already clean", "Clean"]
 
     app.radio[0].set_value("Browse Tasks").run(timeout=10)
 
